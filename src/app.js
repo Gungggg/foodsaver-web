@@ -9,6 +9,9 @@ const merchantRoutes = require('./modules/merchant/merchant.routes');
 const productRoutes = require('./modules/products/product.routes');
 const orderRoutes = require('./modules/orders/order.routes');
 const paymentRoutes = require('./modules/payments/payment.routes');
+const impactRoutes = require('./modules/impact/impact.routes');
+const path = require('path');
+const adminRoutes = require('./modules/admin/admin.routes');
 
 const app = express();
 
@@ -23,11 +26,20 @@ app.get('/', (req, res) => {
     });
 });
 
+app.use(
+    '/uploads',
+    express.static(
+        path.join(__dirname, '../uploads')
+    )
+);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/merchant', merchantRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/impact', impactRoutes);
+app.use('/api/admin', adminRoutes);
 
 module.exports = app;

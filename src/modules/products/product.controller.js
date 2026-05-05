@@ -16,6 +16,10 @@ exports.createProduct = (req, res) => {
             available_until
         } = req.body;
 
+        const imageUrl = req.file
+            ? `/uploads/${req.file.filename}`
+            : null;
+
         // ambil merchant profile
         const merchantQuery = `
       SELECT * FROM merchant_profiles
@@ -50,9 +54,10 @@ exports.createProduct = (req, res) => {
           original_price,
           discount_price,
           stock,
-          available_until
+          available_until,
+          image_url
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
             db.query(
@@ -65,7 +70,8 @@ exports.createProduct = (req, res) => {
                     original_price,
                     discount_price,
                     stock,
-                    available_until
+                    available_until,
+                    imageUrl
                 ],
                 (err) => {
 
@@ -102,28 +108,149 @@ exports.getAllProducts = (req, res) => {
 
     try {
 
-        const query = `
-      SELECT
-        surprise_bags.*,
-        merchant_profiles.store_name
+        const {
+            search,
+            min_price,
+            max_price,
+            in_stock,
+            merchant,
+            page = 1,
+            limit = 5
+        } = req.query;
+
+        const currentPage = Number(page);
+
+        const dataLimit = Number(limit);
+
+        const offset =
+            (currentPage - 1) * dataLimit;
+
+        let baseQuery = `
       FROM surprise_bags
       JOIN merchant_profiles
       ON surprise_bags.merchant_id = merchant_profiles.id
-      ORDER BY created_at DESC
+      WHERE 1=1
     `;
 
-        db.query(query, (err, results) => {
+        const values = [];
+
+        // search
+        if (search) {
+
+            baseQuery += `
+        AND surprise_bags.name LIKE ?
+      `;
+
+            values.push(`%${search}%`);
+
+        }
+
+        // min price
+        if (min_price) {
+
+            baseQuery += `
+        AND surprise_bags.discount_price >= ?
+      `;
+
+            values.push(min_price);
+
+        }
+
+        // max price
+        if (max_price) {
+
+            baseQuery += `
+        AND surprise_bags.discount_price <= ?
+      `;
+
+            values.push(max_price);
+
+        }
+
+        // stock
+        if (in_stock === 'true') {
+
+            baseQuery += `
+        AND surprise_bags.stock > 0
+      `;
+
+        }
+
+        // merchant
+        if (merchant) {
+
+            baseQuery += `
+        AND merchant_profiles.store_name LIKE ?
+      `;
+
+            values.push(`%${merchant}%`);
+
+        }
+
+        // total count query
+        const countQuery = `
+      SELECT COUNT(*) AS total
+      ${baseQuery}
+    `;
+
+        db.query(countQuery, values, (err, countResult) => {
 
             if (err) {
+
                 return res.status(500).json({
-                    message: 'Database error'
+                    message: 'Count query failed'
                 });
+
             }
 
-            return res.status(200).json({
-                message: 'Products fetched',
-                data: results
-            });
+            const totalData =
+                countResult[0].total;
+
+            const totalPages =
+                Math.ceil(totalData / dataLimit);
+
+            // data query
+            const dataQuery = `
+        SELECT
+          surprise_bags.*,
+          merchant_profiles.store_name
+        ${baseQuery}
+
+        ORDER BY surprise_bags.created_at DESC
+
+        LIMIT ?
+        OFFSET ?
+      `;
+
+            db.query(
+                dataQuery,
+                [...values, dataLimit, offset],
+                (err, results) => {
+
+                    if (err) {
+
+                        return res.status(500).json({
+                            message: 'Database error',
+                            error: err
+                        });
+
+                    }
+
+                    return res.status(200).json({
+                        message: 'Products fetched',
+
+                        pagination: {
+                            current_page: currentPage,
+                            limit: dataLimit,
+                            total_data: totalData,
+                            total_pages: totalPages
+                        },
+
+                        data: results
+                    });
+
+                }
+            );
 
         });
 

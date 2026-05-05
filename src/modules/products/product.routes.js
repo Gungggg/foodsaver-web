@@ -6,6 +6,8 @@ const authenticate = require('../../middleware/authenticate');
 
 const authorizeRole = require('../../middleware/authorizeRole');
 
+const upload = require('../../utils/upload');
+
 const {
     createProduct,
     getAllProducts,
@@ -18,6 +20,7 @@ router.post(
     '/',
     authenticate,
     authorizeRole('merchant'),
+    upload.single('image'),
     createProduct
 );
 
