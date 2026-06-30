@@ -5,42 +5,45 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatRupiah } from '../../utils/format';
 
+const CATEGORIES = ['Semua', 'Roti & Kue', 'Sayur & Buah', 'Makanan Berat', 'Camilan', 'Minuman', 'Seafood', 'Daging', 'Vegan', 'Cepat Saji', 'Bahan Pokok'];
+
 const Marketplace = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('Semua');
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
-        const response = await api.get('/products');
-        // Assume API returns { status: 'success', data: [...] }
+        let url = '/products?limit=1000';
+        if (selectedCategory !== 'Semua') {
+          url += `&category=${encodeURIComponent(selectedCategory)}`;
+        }
+        
+        const response = await api.get(url);
         setProducts(response.data.data || []);
-        setLoading(false);
+        setError(null);
       } catch (err) {
         setError('Gagal memuat daftar produk. Silakan coba lagi nanti.');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
+  }, [selectedCategory]);
 
-  if (loading) {
+  const getImageSrc = (url) => {
+    if (!url) return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop";
+    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+  };
+
+  if (loading && products.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500 text-center">
-          <span className="material-symbols-outlined text-4xl mb-2">error</span>
-          <p>{error}</p>
-        </div>
       </div>
     );
   }
@@ -51,42 +54,69 @@ const Marketplace = () => {
         <h1 className="text-3xl font-bold font-heading text-gray-900 mb-2">Marketplace</h1>
         <p className="text-gray-600">Selamatkan makanan berlebih dari toko di sekitar Anda.</p>
       </div>
+      
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 flex items-center gap-2">
+          <span className="material-symbols-outlined">error</span>
+          {error}
+        </div>
+      )}
 
-      {products.length === 0 ? (
+      {/* Category Filter */}
+      <div className="mb-8 flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedCategory === cat
+                ? 'bg-[var(--color-primary)] text-white'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-[var(--color-primary)]'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)]"></div>
+        </div>
+      ) : products.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
           <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">inventory_2</span>
           <h3 className="text-xl font-heading font-semibold text-gray-700 mb-2">Belum ada produk</h3>
-          <p className="text-gray-500">Saat ini belum ada makanan berlebih yang tersedia. Cek lagi nanti!</p>
+          <p className="text-gray-500">Saat ini belum ada makanan berlebih yang tersedia untuk kategori ini. Cek lagi nanti!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (
             <Card key={product.id} className="flex flex-col h-full overflow-hidden hover:-translate-y-1 transition-transform duration-300 !p-0">
               <div className="relative h-48 bg-gray-200">
-                {product.image_url ? (
-                  <img 
-                    src={`http://localhost:5000${product.image_url}`} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img 
-                    src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop" 
-                    alt="Placeholder" 
-                    className="w-full h-full object-cover"
-                  />
-                )}
+                <img 
+                  src={getImageSrc(product.image_url)} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover"
+                />
+                
                 {product.stock <= 5 && (
                   <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md">
                     Sisa {product.stock}!
                   </div>
+                )}
+                
+                {/* Tampilkan Label Kategori di pojok kanan atas */}
+                {product.category_name && (
+                   <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-gray-800 text-xs font-medium px-2 py-1 rounded-md shadow-sm border border-gray-100">
+                     {product.category_name}
+                   </div>
                 )}
               </div>
               
               <div className="p-5 flex flex-col flex-grow">
                 <div className="mb-2">
                   <h3 className="text-lg font-bold font-heading text-gray-900 line-clamp-1">{product.name}</h3>
-                  {/* Ideally we'd fetch merchant name if joined, for now placeholder if not available */}
                   <p className="text-sm text-gray-500 flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px]">storefront</span>
                     {product.merchant_name || 'FoodSaver Partner'}

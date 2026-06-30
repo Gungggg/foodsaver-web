@@ -88,6 +88,7 @@ exports.getAllProducts = (req, res) => {
 
         const {
             search,
+            category,
             min_price,
             max_price,
             in_stock,
@@ -105,8 +106,8 @@ exports.getAllProducts = (req, res) => {
 
         let baseQuery = `
       FROM surprise_bags
-      JOIN merchant_profiles
-      ON surprise_bags.merchant_id = merchant_profiles.id
+      JOIN merchant_profiles ON surprise_bags.merchant_id = merchant_profiles.id
+      LEFT JOIN categories ON surprise_bags.category_id = categories.id
       WHERE 1=1
     `;
 
@@ -114,13 +115,14 @@ exports.getAllProducts = (req, res) => {
 
         // search
         if (search) {
-
-            baseQuery += `
-        AND surprise_bags.name LIKE ?
-      `;
-
+            baseQuery += ` AND surprise_bags.name LIKE ? `;
             values.push(`%${search}%`);
+        }
 
+        // category
+        if (category) {
+            baseQuery += ` AND categories.name = ? `;
+            values.push(category);
         }
 
         // min price
@@ -191,7 +193,8 @@ exports.getAllProducts = (req, res) => {
             const dataQuery = `
         SELECT
           surprise_bags.*,
-          merchant_profiles.store_name
+          merchant_profiles.store_name,
+          categories.name AS category_name
         ${baseQuery}
 
         ORDER BY surprise_bags.created_at DESC

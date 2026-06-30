@@ -67,7 +67,7 @@ const ProductDetail = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100">
         <div className="rounded-xl overflow-hidden h-64 md:h-96 relative bg-gray-100">
            <img 
-              src={product?.image_url ? `http://localhost:5000${product.image_url}` : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop"} 
+              src={product?.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:5000${product.image_url}`) : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop"} 
               alt={product?.name} 
               className="w-full h-full object-cover"
             />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import api from '../../services/api';
 import { AuthContext } from '../../contexts/AuthContext';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -12,37 +13,53 @@ const AdminDashboard = () => {
     totalOrders: 0
   });
   const [loading, setLoading] = useState(true);
+  const [merchants, setMerchants] = useState([]);
+  const [loadingMerchants, setLoadingMerchants] = useState(true);
 
   useEffect(() => {
-    // In a real scenario, there would be dedicated admin endpoints.
-    // We are simulating fetching global metrics by fetching available lists if the API supports it.
-    // For now, we'll try to fetch all products and orders to calculate some metrics.
     const fetchAdminData = async () => {
       try {
-        const [productsRes, ordersRes] = await Promise.all([
-          api.get('/products'),
-          api.get('/orders')
+        const [statsRes, merchantsRes] = await Promise.all([
+          api.get('/admin/dashboard'),
+          api.get('/admin/merchants')
         ]);
         
-        const products = productsRes.data.data || [];
-        const orders = ordersRes.data.data || [];
-
+        const data = statsRes.data.data;
         setStats({
-          totalUsers: 'N/A', // Assuming no GET /users endpoint is publicly accessible yet
-          totalMerchants: 'N/A', 
-          totalProducts: products.length,
-          totalOrders: orders.length
+          totalUsers: data.total_users || 0,
+          totalMerchants: data.total_merchants || 0, 
+          totalProducts: data.total_products || 0,
+          totalOrders: data.total_orders || 0
         });
 
-        setLoading(false);
+        setMerchants(merchantsRes.data.data || []);
       } catch (err) {
         console.error("Failed to fetch admin data", err);
+      } finally {
         setLoading(false);
+        setLoadingMerchants(false);
       }
     };
 
     fetchAdminData();
   }, []);
+
+  const handleVerifyMerchant = async (id) => {
+    if (!window.confirm('Apakah Anda yakin ingin memverifikasi merchant ini?')) return;
+    
+    try {
+      await api.patch(`/admin/merchants/${id}/verify`);
+      setMerchants((prevMerchants) => 
+        prevMerchants.map(merchant => 
+          merchant.id === id ? { ...merchant, is_verified: 1 } : merchant
+        )
+      );
+      alert('Merchant berhasil diverifikasi!');
+    } catch (err) {
+      console.error("Gagal memverifikasi merchant", err);
+      alert('Gagal memverifikasi merchant. Silakan coba lagi.');
+    }
+  };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat data administrator...</div>;
 
@@ -92,12 +109,68 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-        <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">admin_panel_settings</span>
-        <h2 className="text-xl font-bold font-heading mb-2">Verifikasi Merchant (Coming Soon)</h2>
-        <p className="text-gray-500 max-w-md mx-auto">
-          Fitur untuk menyetujui atau menolak pendaftaran merchant baru akan segera hadir setelah endpoint API terkait verifikasi diimplementasikan di backend.
-        </p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold font-heading">Daftar Merchant</h2>
+            <p className="text-gray-500 text-sm mt-1">Kelola dan verifikasi pendaftaran merchant.</p>
+          </div>
+        </div>
+        
+        {loadingMerchants ? (
+          <div className="text-center text-gray-500 py-8">Memuat daftar merchant...</div>
+        ) : merchants.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">Belum ada merchant yang mendaftar.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Nama Toko</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Email</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Lokasi</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Status</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {merchants.map((merchant) => (
+                  <tr key={merchant.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 font-medium text-gray-900">{merchant.store_name}</td>
+                    <td className="py-3 px-4 text-gray-600">{merchant.email}</td>
+                    <td className="py-3 px-4 text-gray-600 max-w-xs truncate">{merchant.location}</td>
+                    <td className="py-3 px-4">
+                      {merchant.is_verified ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                          Terverifikasi
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="material-symbols-outlined text-[14px]">pending</span>
+                          Menunggu
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      {!merchant.is_verified ? (
+                        <Button 
+                          variant="primary" 
+                          className="px-3 py-1.5 text-xs"
+                          onClick={() => handleVerifyMerchant(merchant.id)}
+                        >
+                          Verifikasi
+                        </Button>
+                      ) : (
+                        <span className="text-gray-400 text-sm italic">Selesai</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
