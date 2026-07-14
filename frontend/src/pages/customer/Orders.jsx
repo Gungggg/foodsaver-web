@@ -94,9 +94,14 @@ const Orders = () => {
                      <p className="text-xs text-gray-500 mb-1">Ambil pesanan di:</p>
                      <p className="font-bold text-sm text-gray-800 mb-2">{order.store_name || 'Toko FoodSaver'}</p>
                      <p className="text-xs text-gray-500 mb-2">Tunjukkan kode ini ke Kasir</p>
-                     <div className="bg-white border border-gray-300 py-2 px-3 rounded-lg flex flex-col items-center justify-center">
+                     <div className="bg-white border border-gray-300 py-2 px-3 rounded-lg flex flex-col items-center justify-center mb-2">
                        <span className="font-mono text-xl font-bold tracking-widest text-[var(--color-primary)]">{order.pickup_code}</span>
                      </div>
+                     {order.payment_method === 'cash' && (
+                       <div className="bg-red-50 text-red-700 border border-red-200 p-2 rounded text-xs font-bold mt-2">
+                         Mohon siapkan uang tunai sebesar {formatRupiah(order.total_amount)} untuk kasir.
+                       </div>
+                     )}
                    </div>
                 )}
               </div>

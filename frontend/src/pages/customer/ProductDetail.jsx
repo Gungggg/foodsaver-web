@@ -13,6 +13,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('transfer');
   const [ordering, setOrdering] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -43,6 +44,7 @@ const ProductDetail = () => {
       await api.post('/orders', {
         bag_id: product.id,
         quantity: quantity,
+        payment_method: paymentMethod
       });
       setSuccess(true);
       setOrdering(false);
@@ -109,6 +111,26 @@ const ProductDetail = () => {
               >
                 <span className="material-symbols-outlined">add</span>
               </button>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Metode Pembayaran</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div 
+                className={`border rounded-xl p-4 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'transfer' ? 'border-[var(--color-primary)] bg-green-50 ring-2 ring-green-100' : 'border-gray-200 hover:border-gray-300'}`}
+                onClick={() => setPaymentMethod('transfer')}
+              >
+                <span className={`material-symbols-outlined ${paymentMethod === 'transfer' ? 'text-[var(--color-primary)]' : 'text-gray-400'}`}>qr_code_scanner</span>
+                <span className={`text-sm font-medium ${paymentMethod === 'transfer' ? 'text-[var(--color-primary)]' : 'text-gray-600'}`}>Transfer / QRIS</span>
+              </div>
+              <div 
+                className={`border rounded-xl p-4 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'cash' ? 'border-[var(--color-primary)] bg-green-50 ring-2 ring-green-100' : 'border-gray-200 hover:border-gray-300'}`}
+                onClick={() => setPaymentMethod('cash')}
+              >
+                <span className={`material-symbols-outlined ${paymentMethod === 'cash' ? 'text-[var(--color-primary)]' : 'text-gray-400'}`}>payments</span>
+                <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-[var(--color-primary)]' : 'text-gray-600'}`}>Tunai (Kasir)</span>
+              </div>
             </div>
           </div>
 

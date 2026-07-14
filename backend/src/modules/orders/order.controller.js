@@ -12,7 +12,8 @@ exports.createOrder = async (req, res) => {
 
         const {
             bag_id,
-            quantity
+            quantity,
+            payment_method = 'transfer'
         } = req.body;
 
         // cek produk
@@ -73,9 +74,10 @@ exports.createOrder = async (req, res) => {
           quantity,
           total_amount,
           pickup_code,
-          status
+          status,
+          payment_method
         )
-        VALUES (?, ?, ?, ?, ?, ?, 'paid')
+        VALUES (?, ?, ?, ?, ?, ?, 'paid', ?)
       `;
 
             db.query(
@@ -86,7 +88,8 @@ exports.createOrder = async (req, res) => {
                     bag_id,
                     quantity,
                     totalAmount,
-                    pickupCode
+                    pickupCode,
+                    payment_method
                 ],
                 (err) => {
 
@@ -150,7 +153,8 @@ exports.createOrder = async (req, res) => {
                                             invoice_id: invoiceId,
                                             total_amount: totalAmount,
                                             pickup_code: pickupCode,
-                                            qr_code: qrCodeImage
+                                            qr_code: qrCodeImage,
+                                            payment_method: payment_method
                                         }
                                     });
 

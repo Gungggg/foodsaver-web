@@ -130,13 +130,20 @@ const MerchantDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.quantity} porsi</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatRupiah(order.total_amount)}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      (order.status === 'completed' || order.status === 'picked_up') ? 'bg-green-100 text-green-800' : 
-                      (order.status === 'pending' || order.status === 'paid') ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {order.status === 'paid' ? 'Menunggu Diambil' : order.status}
-                    </span>
+                    <div className="flex flex-col gap-2">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full w-fit ${
+                        (order.status === 'completed' || order.status === 'picked_up') ? 'bg-green-100 text-green-800' : 
+                        (order.status === 'pending' || order.status === 'paid') ? 'bg-yellow-100 text-yellow-800' : 
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {order.status === 'paid' ? 'Menunggu Diambil' : order.status}
+                      </span>
+                      {order.payment_method === 'cash' && order.status === 'paid' && (
+                        <span className="px-2 py-1 inline-flex text-[10px] font-bold rounded bg-red-100 text-red-800 border border-red-200">
+                          TAGIH TUNAI!
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {(order.status === 'pending' || order.status === 'paid') && (
