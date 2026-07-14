@@ -4,6 +4,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Pagination from '../../components/ui/Pagination';
 import { formatRupiah, getImageUrl } from '../../utils/format';
 
 const AdminDashboard = () => {
@@ -22,14 +23,15 @@ const AdminDashboard = () => {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productSearch, setProductSearch] = useState('');
+  const [productPage, setProductPage] = useState(1);
+  const [productPagination, setProductPagination] = useState({ totalPages: 1 });
 
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const [statsRes, merchantsRes, productsRes] = await Promise.all([
+        const [statsRes, merchantsRes] = await Promise.all([
           api.get('/admin/dashboard'),
-          api.get('/admin/merchants'),
-          api.get('/products?limit=100')
+          api.get('/admin/merchants')
         ]);
         
         const data = statsRes.data.data;
@@ -41,18 +43,49 @@ const AdminDashboard = () => {
         });
 
         setMerchants(merchantsRes.data.data || []);
-        setProducts(productsRes.data.data || []);
       } catch (err) {
         console.error("Failed to fetch admin data", err);
       } finally {
         setLoading(false);
         setLoadingMerchants(false);
-        setLoadingProducts(false);
       }
     };
 
     fetchAdminData();
   }, []);
+
+  useEffect(() => {
+    const fetchAdminProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        let url = `/products?limit=20&page=${productPage}`;
+        if (productSearch.trim()) {
+          url += `&search=${encodeURIComponent(productSearch.trim())}`;
+        }
+        const res = await api.get(url);
+        setProducts(res.data.data || []);
+        if (res.data.pagination) {
+          setProductPagination({ totalPages: res.data.pagination.total_pages });
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin products", err);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    
+    // Add debounce for search
+    const delayDebounceFn = setTimeout(() => {
+      fetchAdminProducts();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [productPage, productSearch]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setProductPage(1);
+  }, [productSearch]);
 
   const handleVerifyMerchant = async (id) => {
     if (!window.confirm('Apakah Anda yakin ingin memverifikasi merchant ini?')) return;
@@ -75,12 +108,6 @@ const AdminDashboard = () => {
     m.store_name.toLowerCase().includes(merchantSearch.toLowerCase()) || 
     m.email.toLowerCase().includes(merchantSearch.toLowerCase()) ||
     m.location.toLowerCase().includes(merchantSearch.toLowerCase())
-  );
-
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
-    (p.store_name && p.store_name.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (p.category_name && p.category_name.toLowerCase().includes(productSearch.toLowerCase()))
   );
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat data administrator...</div>;
@@ -246,7 +273,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+                {products.length > 0 ? products.map((product) => (
                   <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -276,6 +303,11 @@ const AdminDashboard = () => {
             </table>
           </div>
         )}
+        <Pagination 
+          currentPage={productPage} 
+          totalPages={productPagination.totalPages} 
+          onPageChange={(newPage) => setProductPage(newPage)} 
+        />
       </div>
     </div>
   );

@@ -4,12 +4,15 @@ import api from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Pagination from '../../components/ui/Pagination';
 import { formatRupiah, getImageUrl } from '../../utils/format';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [paginationData, setPaginationData] = useState({ totalPages: 1 });
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,20 +30,40 @@ const Products = () => {
   });
 
   const fetchProducts = async () => {
+    setLoading(true);
     try {
-      // In a real app, backend would filter by merchant_id from token
-      const response = await api.get('/products');
+      // First get the merchant profile to get the merchant_id
+      const profileRes = await api.get('/merchant/profile');
+      const merchantId = profileRes.data.data.id;
+      
+      let url = `/products?merchant_id=${merchantId}&limit=20&page=${page}`;
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+      }
+      const response = await api.get(url);
       setProducts(response.data.data || []);
-      setLoading(false);
+      if (response.data.pagination) {
+        setPaginationData({ totalPages: response.data.pagination.total_pages });
+      }
     } catch (err) {
       console.error("Failed to fetch products");
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchProducts();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [page, searchQuery]);
+
+  // Reset page to 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
   const handleOpenModal = (product = null) => {
     if (product) {
@@ -115,12 +138,7 @@ const Products = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Memuat produk...</div>;
-
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  if (loading && products.length === 0) return <div className="p-8 text-center text-gray-500">Memuat produk...</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -157,7 +175,7 @@ const Products = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
+        {products.map((product) => (
           <Card key={product.id} className="flex flex-col h-full !p-0 overflow-hidden border border-gray-100 shadow-sm hover:shadow-md">
             <div className="h-40 bg-gray-200">
                <img 
@@ -188,6 +206,12 @@ const Products = () => {
           </Card>
         ))}
       </div>
+      
+      <Pagination 
+        currentPage={page} 
+        totalPages={paginationData.totalPages} 
+        onPageChange={(newPage) => setPage(newPage)} 
+      />
 
       {/* Modal Form */}
       {isModalOpen && (

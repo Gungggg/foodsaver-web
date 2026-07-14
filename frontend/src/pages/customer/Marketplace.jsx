@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Pagination from '../../components/ui/Pagination';
 import { formatRupiah, getImageUrl } from '../../utils/format';
 
 const CATEGORIES = ['Semua', 'Roti & Kue', 'Sayur & Buah', 'Makanan Berat', 'Camilan', 'Minuman', 'Seafood', 'Daging', 'Vegan', 'Cepat Saji', 'Bahan Pokok'];
@@ -13,12 +14,14 @@ const Marketplace = () => {
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [paginationData, setPaginationData] = useState({ totalPages: 1 });
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        let url = '/products?limit=1000';
+        let url = `/products?limit=20&page=${page}`;
         if (selectedCategory !== 'Semua') {
           url += `&category=${encodeURIComponent(selectedCategory)}`;
         }
@@ -28,6 +31,9 @@ const Marketplace = () => {
         
         const response = await api.get(url);
         setProducts(response.data.data || []);
+        if (response.data.pagination) {
+          setPaginationData({ totalPages: response.data.pagination.total_pages });
+        }
         setError(null);
       } catch (err) {
         setError('Gagal memuat daftar produk. Silakan coba lagi nanti.');
@@ -37,9 +43,12 @@ const Marketplace = () => {
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, page]);
 
-  // Deleted local getImageSrc
+  // Reset page to 1 when search or category changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, searchQuery]);
 
   if (loading && products.length === 0) {
     return (
@@ -123,7 +132,6 @@ const Marketplace = () => {
                   </div>
                 )}
                 
-                {/* Tampilkan Label Kategori di pojok kanan atas */}
                 {product.category_name && (
                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-gray-800 text-xs font-medium px-2 py-1 rounded-md shadow-sm border border-gray-100">
                      {product.category_name}
@@ -132,25 +140,21 @@ const Marketplace = () => {
               </div>
               
               <div className="p-5 flex flex-col flex-grow">
-                <div className="mb-2">
-                  <h3 className="text-lg font-bold font-heading text-gray-900 line-clamp-1">{product.name}</h3>
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">storefront</span>
-                    {product.merchant_name || 'FoodSaver Partner'}
-                  </p>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold font-heading line-clamp-1" title={product.name}>{product.name}</h3>
                 </div>
-                
-                <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow">
-                  {product.description || 'Tidak ada deskripsi.'}
-                </p>
-                
+                <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                  <span className="material-symbols-outlined text-[16px]">storefront</span>
+                  <span className="truncate">{product.store_name}</span>
+                </div>
+                <p className="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">{product.description}</p>
                 <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-400 line-through">{formatRupiah(product.original_price)}</p>
                     <p className="text-lg font-bold text-[var(--color-primary)]">{formatRupiah(product.discount_price)}</p>
                   </div>
                   <Link to={`/products/${product.id}`}>
-                    <Button className="!px-4 !py-2">Pesan</Button>
+                    <Button variant="primary" className="!py-2 !px-4 shadow-sm">Pesan</Button>
                   </Link>
                 </div>
               </div>
@@ -158,6 +162,12 @@ const Marketplace = () => {
           ))}
         </div>
       )}
+      
+      <Pagination 
+        currentPage={page} 
+        totalPages={paginationData.totalPages} 
+        onPageChange={(newPage) => setPage(newPage)} 
+      />
     </div>
   );
 };

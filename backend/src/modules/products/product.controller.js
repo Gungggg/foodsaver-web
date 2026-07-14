@@ -93,6 +93,7 @@ exports.getAllProducts = (req, res) => {
             max_price,
             in_stock,
             merchant,
+            merchant_id,
             page = 1,
             limit = 5
         } = req.query;
@@ -156,15 +157,16 @@ exports.getAllProducts = (req, res) => {
 
         }
 
-        // merchant
+        // merchant by store name
         if (merchant) {
-
-            baseQuery += `
-        AND merchant_profiles.store_name LIKE ?
-      `;
-
+            baseQuery += ` AND merchant_profiles.store_name LIKE ? `;
             values.push(`%${merchant}%`);
+        }
 
+        // merchant_id
+        if (merchant_id) {
+            baseQuery += ` AND surprise_bags.merchant_id = ? `;
+            values.push(merchant_id);
         }
 
         // total count query
