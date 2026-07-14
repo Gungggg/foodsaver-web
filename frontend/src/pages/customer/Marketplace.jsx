@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { formatRupiah } from '../../utils/format';
+import { formatRupiah, getImageUrl } from '../../utils/format';
 
 const CATEGORIES = ['Semua', 'Roti & Kue', 'Sayur & Buah', 'Makanan Berat', 'Camilan', 'Minuman', 'Seafood', 'Daging', 'Vegan', 'Cepat Saji', 'Bahan Pokok'];
 
@@ -35,10 +35,7 @@ const Marketplace = () => {
     fetchProducts();
   }, [selectedCategory]);
 
-  const getImageSrc = (url) => {
-    if (!url) return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop";
-    return url.startsWith('http') ? url : `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${url}`;
-  };
+  // Deleted local getImageSrc
 
   if (loading && products.length === 0) {
     return (
@@ -95,7 +92,7 @@ const Marketplace = () => {
             <Card key={product.id} className="flex flex-col h-full overflow-hidden hover:-translate-y-1 transition-transform duration-300 !p-0">
               <div className="relative h-48 bg-gray-200">
                 <img 
-                  src={getImageSrc(product.image_url)} 
+                  src={getImageUrl(product.image_url)} 
                   alt={product.name} 
                   className="w-full h-full object-cover"
                 />
