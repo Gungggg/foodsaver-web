@@ -136,7 +136,7 @@ const Products = () => {
           <Card key={product.id} className="flex flex-col h-full !p-0 overflow-hidden border border-gray-100 shadow-sm hover:shadow-md">
             <div className="h-40 bg-gray-200">
                <img 
-                  src={product.image_url ? `http://localhost:5000${product.image_url}` : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400&auto=format&fit=crop"} 
+                  src={product.image_url ? `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${product.image_url}` : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400&auto=format&fit=crop"} 
                   alt={product.name} 
                   className="w-full h-full object-cover"
                 />

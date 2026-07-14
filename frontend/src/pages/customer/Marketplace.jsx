@@ -37,7 +37,7 @@ const Marketplace = () => {
 
   const getImageSrc = (url) => {
     if (!url) return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop";
-    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
+    return url.startsWith('http') ? url : `${import.meta.env.VITE_BASE_URL || 'http://localhost:5000'}${url}`;
   };
 
   if (loading && products.length === 0) {
