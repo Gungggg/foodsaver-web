@@ -9,6 +9,7 @@ import { formatRupiah, getImageUrl } from '../../utils/format';
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,23 +117,47 @@ const Products = () => {
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat produk...</div>;
 
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4, mb-10">
         <div>
-          <h1 className="text-3xl font-bold font-heading text-gray-900">Manajemen Produk</h1>
-          <p className="text-gray-600">Kelola etalase makanan berlebih Anda</p>
+          <h1 className="text-3xl font-bold font-heading text-gray-900 mb-2">Kelola Produk</h1>
+          <p className="text-gray-600">Tambah, ubah, atau hapus makanan berlebih yang Anda miliki.</p>
         </div>
         <div className="flex gap-4">
           <Link to="/merchant">
             <Button variant="secondary">Kembali ke Dashboard</Button>
           </Link>
-          <Button onClick={() => handleOpenModal()}>+ Tambah Produk</Button>
+          <Button onClick={() => handleOpenModal()} className="flex items-center gap-2 whitespace-nowrap">
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Tambah Produk
+          </Button>
+        </div>
+      </div>
+      
+      {/* Search Input */}
+      <div className="mb-6 max-w-md">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-gray-400">search</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Cari produk Anda..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm transition-colors"
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <Card key={product.id} className="flex flex-col h-full !p-0 overflow-hidden border border-gray-100 shadow-sm hover:shadow-md">
             <div className="h-40 bg-gray-200">
                <img 

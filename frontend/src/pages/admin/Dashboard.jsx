@@ -3,6 +3,8 @@ import api from '../../services/api';
 import { AuthContext } from '../../contexts/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import { formatRupiah, getImageUrl } from '../../utils/format';
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -15,13 +17,19 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [merchants, setMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
+  const [merchantSearch, setMerchantSearch] = useState('');
+  
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const [statsRes, merchantsRes] = await Promise.all([
+        const [statsRes, merchantsRes, productsRes] = await Promise.all([
           api.get('/admin/dashboard'),
-          api.get('/admin/merchants')
+          api.get('/admin/merchants'),
+          api.get('/products?limit=100')
         ]);
         
         const data = statsRes.data.data;
@@ -33,11 +41,13 @@ const AdminDashboard = () => {
         });
 
         setMerchants(merchantsRes.data.data || []);
+        setProducts(productsRes.data.data || []);
       } catch (err) {
         console.error("Failed to fetch admin data", err);
       } finally {
         setLoading(false);
         setLoadingMerchants(false);
+        setLoadingProducts(false);
       }
     };
 
@@ -60,6 +70,18 @@ const AdminDashboard = () => {
       alert('Gagal memverifikasi merchant. Silakan coba lagi.');
     }
   };
+
+  const filteredMerchants = merchants.filter(m => 
+    m.store_name.toLowerCase().includes(merchantSearch.toLowerCase()) || 
+    m.email.toLowerCase().includes(merchantSearch.toLowerCase()) ||
+    m.location.toLowerCase().includes(merchantSearch.toLowerCase())
+  );
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
+    (p.store_name && p.store_name.toLowerCase().includes(productSearch.toLowerCase())) ||
+    (p.category_name && p.category_name.toLowerCase().includes(productSearch.toLowerCase()))
+  );
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat data administrator...</div>;
 
@@ -110,10 +132,20 @@ const AdminDashboard = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div>
             <h2 className="text-xl font-bold font-heading">Daftar Merchant</h2>
             <p className="text-gray-500 text-sm mt-1">Kelola dan verifikasi pendaftaran merchant.</p>
+          </div>
+          <div className="w-full sm:w-64">
+            <Input 
+              type="text" 
+              placeholder="Cari merchant..." 
+              value={merchantSearch}
+              onChange={(e) => setMerchantSearch(e.target.value)}
+              className="!mb-0"
+              icon="search"
+            />
           </div>
         </div>
         
@@ -134,7 +166,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {merchants.map((merchant) => (
+                {filteredMerchants.length > 0 ? filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">{merchant.store_name}</td>
                     <td className="py-3 px-4 text-gray-600">{merchant.email}</td>
@@ -166,7 +198,80 @@ const AdminDashboard = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-gray-500">
+                      Tidak ada merchant yang cocok dengan pencarian "{merchantSearch}"
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mt-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+          <div>
+            <h2 className="text-xl font-bold font-heading">Daftar Makanan (Produk)</h2>
+            <p className="text-gray-500 text-sm mt-1">Pantau semua produk yang terdaftar di sistem.</p>
+          </div>
+          <div className="w-full sm:w-64">
+            <Input 
+              type="text" 
+              placeholder="Cari makanan atau toko..." 
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              className="!mb-0"
+              icon="search"
+            />
+          </div>
+        </div>
+        
+        {loadingProducts ? (
+          <div className="text-center text-gray-500 py-8">Memuat daftar produk...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">Belum ada produk yang terdaftar.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Produk</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Merchant</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Kategori</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Harga</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 text-sm">Stok</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+                  <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <img src={getImageUrl(product.image_url)} alt={product.name} className="w-10 h-10 rounded object-cover" />
+                        <span className="font-medium text-gray-900">{product.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">{product.store_name}</td>
+                    <td className="py-3 px-4 text-gray-600">{product.category_name || '-'}</td>
+                    <td className="py-3 px-4">
+                      <span className="text-[var(--color-primary)] font-medium">{formatRupiah(product.discount_price)}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {product.stock}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-gray-500">
+                      Tidak ada produk yang cocok dengan pencarian "{productSearch}"
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

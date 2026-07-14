@@ -12,6 +12,7 @@ const Marketplace = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -20,6 +21,9 @@ const Marketplace = () => {
         let url = '/products?limit=1000';
         if (selectedCategory !== 'Semua') {
           url += `&category=${encodeURIComponent(selectedCategory)}`;
+        }
+        if (searchQuery.trim()) {
+          url += `&search=${encodeURIComponent(searchQuery.trim())}`;
         }
         
         const response = await api.get(url);
@@ -33,7 +37,7 @@ const Marketplace = () => {
     };
 
     fetchProducts();
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
   // Deleted local getImageSrc
 
@@ -58,6 +62,22 @@ const Marketplace = () => {
           {error}
         </div>
       )}
+
+      {/* Search Input */}
+      <div className="mb-6 max-w-md">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-gray-400">search</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Cari nama makanan atau nama toko..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] sm:text-sm transition-colors"
+          />
+        </div>
+      </div>
 
       {/* Category Filter */}
       <div className="mb-8 flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
