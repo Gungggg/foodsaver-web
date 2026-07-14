@@ -23,7 +23,7 @@ const MerchantDashboard = () => {
         
         const totalRevenue = orders
           .filter(o => o.status === 'completed' || o.status === 'picked_up')
-          .reduce((sum, o) => sum + o.total_amount, 0);
+          .reduce((sum, o) => sum + Number(o.total_amount), 0);
 
         setStats({
           totalOrders: orders.length,
